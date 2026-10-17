@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CryptoLens</title>
+  <meta name="description" content="An interactive playground that shows what encryption does to your data.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='14' cy='14' r='9' fill='none' stroke='%23f5c542' stroke-width='3'/%3E%3Cpath d='M21 21l8 8' stroke='%23f5c542' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
+        <circle cx="14" cy="14" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M21 21l8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M10 14h8M14 10v8" stroke="currentColor" stroke-width="1" opacity=".6"/>
+      </svg>
+      <div>
+        <h1>CryptoLens</h1>
+        <p>See what encryption does to your data.</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Demonstrations">
+      <button role="tab" id="tab-encrypt" data-panel="encrypt" aria-controls="panel-encrypt" aria-selected="true">Encrypt</button>
+      <button role="tab" id="tab-avalanche" data-panel="avalanche" aria-controls="panel-avalanche" aria-selected="false" tabindex="-1">Avalanche</button>
+      <button role="tab" id="tab-blocks" data-panel="blocks" aria-controls="panel-blocks" aria-selected="false" tabindex="-1">Block modes</button>
+      <button role="tab" id="tab-handshake" data-panel="handshake" aria-controls="panel-handshake" aria-selected="false" tabindex="-1">Handshake</button>
+    </nav>
+  </header>
+
+  <main>
+    <noscript><p class="panel">CryptoLens needs JavaScript to draw its demonstrations.</p></noscript>
+
+    <!-- 1. Encrypt -->
+    <section id="panel-encrypt" role="tabpanel" aria-labelledby="tab-encrypt">
+      <div class="bench">
+        <form class="panel controls" id="enc-form" autocomplete="off">
+          <h2>Encrypt a message</h2>
+          <p class="lead">Pick an algorithm, type a message, and follow every step that turns it into ciphertext.</p>
+
+          <fieldset class="choices">
+            <legend>Algorithm</legend>
+            <label class="choice"><input type="radio" name="algo" value="aes-gcm" checked><span><b>AES-GCM</b><small>Modern default. Encrypts and detects tampering.</small></span></label>
+            <label class="choice"><input type="radio" name="algo" value="chacha20"><span><b>ChaCha20-Poly1305</b><small>Fast without special hardware. Also detects tampering.</small></span></label>
+            <label class="choice"><input type="radio" name="algo" value="aes-cbc"><span><b>AES-CBC</b><small>Blocks are chained together. No tamper detection.</small></span></label>
+            <label class="choice"><input type="radio" name="algo" value="aes-ecb"><span><b>AES-ECB</b><small>Insecure. Included to show why.</small></span></label>
+            <label class="choice"><input type="radio" name="algo" value="rsa-oaep"><span><b>RSA-OAEP</b><small>Public-key encryption for short messages.</small></span></label>
+          </fieldset>
+
+          <label class="field">
+            <span>Message</span>
+            <textarea id="enc-text" name="plaintext" rows="3" maxlength="500">Meet me at the library at 5 pm. Bring the blue folder.</textarea>
+          </label>
+
+          <label class="field" id="enc-bits-field">
+            <span>Key size</span>
+            <select id="enc-bits" name="bits">
+              <option value="128">128 bits</option>
+              <option value="192">192 bits</option>
+              <option value="256" selected>256 bits</option>
+            </select>
+          </label>
+
+          <label class="field" id="enc-key-field">
+            <span>Key in hex (optional)</span>
+            <input id="enc-key" name="key" spellcheck="false" placeholder="Leave empty for a random key">
+          </label>
+
+          <button class="btn primary" type="submit">Encrypt</button>
+          <p class="error" id="enc-error" role="alert" hidden></p>
+        </form>
+
+        <div class="panel drawing" id="enc-out" aria-live="polite">
+          <p class="empty">Press Encrypt to see the result.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Avalanche -->
+    <section id="panel-avalanche" role="tabpanel" aria-labelledby="tab-avalanche" hidden>
+      <div class="bench">
+        <form class="panel controls" id="av-form" onsubmit="return false">
+          <h2>The avalanche effect</h2>
+          <p class="lead">Change a single input bit. A good cipher or hash flips about half of the output bits, with no pattern.</p>
+
+          <label class="field">
+            <span>What to test</span>
+            <select id="av-prim">
+              <option value="aes-plaintext">AES block: flip a message bit</option>
+              <option value="aes-key">AES block: flip a key bit</option>
+              <option value="sha256">SHA-256: flip a message bit</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Message</span>
+            <input id="av-msg" value="Attack at dawn!!" maxlength="64" spellcheck="false">
+            <small class="hint" id="av-msg-hint">AES works on 16-byte blocks, so only the first 16 characters are used.</small>
+          </label>
+
+          <label class="field">
+            <span id="av-bit-label">Flip bit 1</span>
+            <input id="av-bit" type="range" min="0" max="127" value="0" aria-labelledby="av-bit-label">
+          </label>
+
+          <button class="btn secondary" type="button" id="av-random">Flip a random bit</button>
+          <p class="error" id="av-error" role="alert" hidden></p>
+        </form>
+
+        <div class="panel drawing" aria-live="polite">
+          <h3 class="first">Input</h3>
+          <p class="small" id="av-input-note"></p>
+          <div id="av-input"></div>
+
+          <h3>Output</h3>
+          <div class="bitgrids">
+            <figure><div class="bitgrid" id="av-before" role="img" aria-label="Output bits before the change"></div><figcaption><b>Before</b></figcaption></figure>
+            <figure><div class="bitgrid" id="av-after" role="img" aria-label="Output bits after the change"></div><figcaption><b>After one bit flip</b></figcaption></figure>
+            <figure><div class="bitgrid diff" id="av-diff" role="img" aria-label="Output bits that changed"></div><figcaption><b>Bits that changed</b></figcaption></figure>
+          </div>
+          <p class="stat" id="av-stat"></p>
+
+          <h3>Every possible flip</h3>
+          <canvas id="av-hist" class="hist" role="img" aria-label="Histogram of changed output bits"></canvas>
+          <p class="small" id="av-hist-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Block modes -->
+    <section id="panel-blocks" role="tabpanel" aria-labelledby="tab-blocks" hidden>
+      <div class="bench">
+        <form class="panel controls" id="img-form">
+          <h2>Block modes on a picture</h2>
+          <p class="lead">Encrypt the same picture with three AES modes. A pattern that survives encryption is a leak.</p>
+
+          <fieldset class="choices">
+            <legend>Picture</legend>
+            <label class="choice"><input type="radio" name="src" value="sample" checked><span><b>Sample picture</b><small>Flat colours make patterns easy to see.</small></span></label>
+            <label class="choice"><input type="radio" name="src" value="upload"><span><b>Your own image</b><small>Scaled to 128 by 128 pixels in your browser.</small></span></label>
+          </fieldset>
+
+          <label class="field" id="img-file-field" hidden>
+            <span>Choose an image</span>
+            <input type="file" id="img-file" accept="image/*">
+          </label>
+
+          <button class="btn primary" type="submit">Encrypt picture</button>
+          <p class="hint">Every press uses a new random key. The ECB shape stays the same each time.</p>
+          <p class="error" id="img-error" role="alert" hidden></p>
+        </form>
+
+        <div class="panel drawing" aria-live="polite">
+          <div class="picgrid">
+            <figure><canvas id="cv-orig" width="128" height="128" role="img" aria-label="Original picture"></canvas><figcaption><b>Original</b><span id="st-orig"></span></figcaption></figure>
+            <figure><canvas id="cv-ecb" width="128" height="128" role="img" aria-label="Picture encrypted with AES-ECB"></canvas><figcaption><b>AES-ECB</b><span id="st-ecb"></span></figcaption></figure>
+            <figure><canvas id="cv-cbc" width="128" height="128" role="img" aria-label="Picture encrypted with AES-CBC"></canvas><figcaption><b>AES-CBC</b><span id="st-cbc"></span></figcaption></figure>
+            <figure><canvas id="cv-gcm" width="128" height="128" role="img" aria-label="Picture encrypted with AES-GCM"></canvas><figcaption><b>AES-GCM</b><span id="st-gcm"></span></figcaption></figure>
+          </div>
+          <div class="notes" id="img-notes"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Handshake -->
+    <section id="panel-handshake" role="tabpanel" aria-labelledby="tab-handshake" hidden>
+      <div class="bench">
+        <form class="panel controls" id="hs-form">
+          <h2>Key exchange and the man in the middle</h2>
+          <p class="lead">Alice and Bob agree on a secret key over a public network, then exchange a message. Add an attacker and see what changes.</p>
+
+          <label class="choice"><input type="checkbox" id="hs-attacker"><span><b>Attacker between them</b><small>Mallory can read and replace everything on the network.</small></span></label>
+          <label class="choice"><input type="checkbox" id="hs-auth"><span><b>Verify identities with signatures</b><small>Alice and Bob already know each other's identity key.</small></span></label>
+
+          <label class="field">
+            <span>Alice's message</span>
+            <input id="hs-msg" value="Meet at the library at 5 pm." maxlength="120">
+          </label>
+
+          <button class="btn primary" type="submit">Run the handshake</button>
+          <p class="error" id="hs-error" role="alert" hidden></p>
+        </form>
+
+        <div class="panel drawing" id="hs-out" aria-live="polite">
+          <p class="empty">Press Run the handshake to watch Alice and Bob agree on a key.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>CryptoLens is a teaching tool. It shows keys and internal values on purpose, so do not use these keys or this server for real secrets.</p>
+  </footer>
+
+  <script src="/static/js/util.js"></script>
+  <script src="/static/js/encrypt.js"></script>
+  <script src="/static/js/avalanche.js"></script>
+  <script src="/static/js/blocks.js"></script>
+  <script src="/static/js/handshake.js"></script>
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
